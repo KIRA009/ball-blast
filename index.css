@@ -1,4 +1,16 @@
 body {
 	overflow-x: hidden;
 	overflow-y: hidden;
+	margin: 0;
+}
+
+div {
+	margin-top: 30vh;
+	margin-left: 30px;
+	font-size: 30px;
+}
+
+canvas {
+	position: absolute;
+	top: 0;
 }

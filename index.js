@@ -189,22 +189,14 @@ var Game = function() {
 		catch{}
 		try{clearInterval(painting);}
 		catch{}
-		console.log('Here');
-		const explosion = new Image();
-		explosion.src = 'explosion.png';
-		explosion.onload = function(e) {
-			self.painter.drawImage(explosion, {x: self.cannon.x - 70, y: self.cannon.y - 80});
-		}
+		self.painter.drawImage(explosion, {x: self.cannon.x - 70, y: self.cannon.y - 80});
+		smash.play();
 	}
 }
 
 var Painter = function(game_inst) {
 	var self = this;
 	this.game = game_inst;
-	const cannon_ball = new Image();
-	const cannon = new Image();
-	cannon_ball.src = 'cannon_ball.png';
-	cannon.src = 'cannon.png';
 
 	this.fill_circle = function(el) {
 		self.game.ctx.beginPath();
@@ -257,7 +249,22 @@ var Painter = function(game_inst) {
 	}
 }
 
-game = new Game();
-game.init();
-game.draw();
-game.start();
+const relative_path = './resources/';
+const cannon_ball = new Image();
+const cannon = new Image();
+const explosion = new Image();
+const smash = new Audio();
+cannon_ball.src = relative_path + 'cannon_ball.png';
+cannon.src = relative_path + 'cannon.png';
+explosion.src = relative_path + 'explosion.png';
+smash.src = relative_path + 'smash.mp3';
+
+var load = setInterval(function() {
+	if (explosion.complete && cannon_ball.complete && cannon.complete && smash.readyState == 4) {
+		game = new Game();
+		game.init();
+		game.draw();
+		game.start();
+		clearInterval(load);
+	}
+}, 100);
