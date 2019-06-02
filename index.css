@@ -2,9 +2,10 @@ body {
 	overflow-x: hidden;
 	overflow-y: hidden;
 	margin: 0;
+	font-family: Helvetica;
 }
 
-div {
+#loader {
 	margin-top: 30vh;
 	margin-left: 30px;
 	font-size: 30px;
@@ -13,4 +14,35 @@ div {
 canvas {
 	position: absolute;
 	top: 0;
+}
+
+#scores {
+	position: absolute;
+	background-color: #fff;
+	height: 10vh;
+	width: 100vw;
+	top: 0;
+	text-transform: uppercase;
+	padding: 10px;
+	font-size: 24px;
+}
+
+#scores > div {
+	margin-top: 14px;
+	line-height: 1.2em;
+}
+
+#scores #div1 {
+	float: left;
+}
+
+#scores #div2 {
+	float: right;
+	right: 40px;
+	position: relative;
+}
+
+#scores div span {
+	border-left: 3px solid #31bbfc;
+	padding-left: 10px;
 }

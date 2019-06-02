@@ -4,28 +4,27 @@ var Rectangle = function(x, y, width, height, color) {
 	this.width = width;
 	this.height = height;
 	this.color = color;
-	var slide = 2;
-	var up = 4;
+	var slide = 3;
+	var up = 20;
 	var self = this;
 
-	this.move = function(dir) {
-		if (self.y >= game.vh)
-			return;
-		if (dir == 'r')
-			self.x += slide;
-		else if (dir == 'l')
-			self.x -= slide;
-		else if (dir == 'u')
-			self.y -= up;
+	this.slide = function(dir) {
+		self.x += (dir * slide);
 
 		if (self.x < 0) {
 			self.x = 0;
 			return;
 		}
+
 		if (self.x > game.vw - 100) {
 			self.x = game.vw - 100;
 			return;
 		}
+	}
+
+	this.move = function() {
+		self.y -= up;
+
 		for (var i=0; i<game.balls.length; i++) {
 			var ball = game.balls[i];
 			var left = self.x;
@@ -52,7 +51,8 @@ var Rectangle = function(x, y, width, height, color) {
 			return;
 		game.bullets.splice(game.bullets.indexOf(self), 1);
 		ball.score -= 1;
-		if (ball.score == 0) {
+		if (ball.score <= 0) {
+			game.add_score(ball.rad * 2);
 			game.balls.splice(game.balls.indexOf(ball), 1);
 			if (ball.rad < 35) return;
 			game.balls.push(new Circle(ball.cx - ball.rad, ball.cy, Math.floor(ball.rad), [-1, ball.dirs[1]]));
@@ -83,7 +83,8 @@ var Circle = function(cx, cy, score, dirs) {
 	this.score = score || 60 + Math.floor(Math.random() * 100);
 	this.rad = this.score * 0.5;
 	var self = this;
-	var slide = 2;
+	var hor = 5;
+	var vert = 3;
 
 	this.move = function() {
 		if (self.cx + self.rad > game.vw - 60) {
@@ -102,8 +103,8 @@ var Circle = function(cx, cy, score, dirs) {
 			self.cy = self.cy_init;
 			self.dirs[1] = 1;
 		}
-		self.cx += (self.dirs[0] * slide);
-		self.cy += (self.dirs[1] * slide);
+		self.cx += (self.dirs[0] * hor);
+		self.cy += (self.dirs[1] * vert);
 
 		var left = game.cannon.x;
 		var width = left + game.cannon.width;
@@ -111,17 +112,35 @@ var Circle = function(cx, cy, score, dirs) {
 		var height = top + game.cannon.height;
 
 		if (width < self.cx && width > self.cx - self.rad) {
-			if (Math.pow(self.cx - width, 2) + Math.pow(self.cy - game.cannon.y, 2) < Math.pow(self.rad, 2))
+			if (Math.pow(self.cx - width, 2) + Math.pow(self.cy - game.cannon.y, 2) < Math.pow(self.rad, 2) || (self.cy > top && self.cy < height)) {
+				game.game_over = true;
 				game.stop();
-			else if (self.cy > top && self.cy < height)
-				game.stop();
+			}
 		}
 		else if (left > self.cx && left < self.cx + self.rad){
-			if (Math.pow(self.cx - left, 2) + Math.pow(self.cy - game.cannon.y, 2) < Math.pow(self.rad, 2))
+			if (Math.pow(self.cx - left, 2) + Math.pow(self.cy - game.cannon.y, 2) < Math.pow(self.rad, 2) || (self.cy > top && self.cy < height)) {
+				game.game_over = true;
 				game.stop();
-			else if (self.cy > top && self.cy < height)
-				game.stop();
+			}
 		}
+	}
+}
+
+
+var Storage = function() {
+	this.storage = window.localStorage;
+	var self = this;
+	var high_score = document.getElementById('high-score');
+	this.set = function(high) {
+		if (high == null) {
+			high = (self.get() === "undefined" || self.get() === "null") ? 0 : self.get();
+		}
+		self.storage.setItem('high-score', high);
+		high_score.innerHTML = high;
+	}
+
+	this.get = function() {
+		return self.storage.getItem('high-score');
 	}
 }
 
@@ -129,6 +148,7 @@ var Circle = function(cx, cy, score, dirs) {
 
 var Game = function() {
 	var self = this;
+	var cur_score = document.getElementById('cur-score');
 	this.vw = window.innerWidth;
 	this.vh = window.innerHeight;
 
@@ -143,22 +163,30 @@ var Game = function() {
 		self.cannon = new Rectangle((self.vw - 20) * 0.5, self.vh - 150, 75, 95, '#31bbfc');
 		self.bullets = [];
 		self.balls = [];
+		self.score = -1;
 		self.kd = false;
 		self.ongoing = false;
+		self.game_over = true;
 	}
 
 	this.move = function(evt) {
 		if (evt.type == 'keydown') {
+			if (evt.keyCode == 32) {
+				if (self.ongoing)
+					self.stop();
+				else
+					self.start();
+			}
 			if (evt.keyCode != 37 && evt.keyCode != 39)
 				return;
 			if (!self.kd) {
 				self.kd = true;
 				if (evt.keyCode == 37)
-					var dir = 'l';
+					var dir = -1;
 				else if (evt.keyCode == 39)
-					var dir = 'r'
+					var dir = 1;
 				mouse = setInterval(function() {
-					self.cannon.move(dir);
+					self.cannon.slide(dir);
 				}, 5);
 			}
 		}
@@ -172,14 +200,22 @@ var Game = function() {
 	this.draw = function() {
 		self.painter = new Painter(self);
 		self.painter.draw();
+		self.add_score(1);
+	}
+
+	this.add_score = function(ds) {
+		self.score += ds;
+		cur_score.innerHTML = self.score;
 	}
 
 	this.start = function() {
 		self.painter.create_bullets();
 		self.painter.create_balls();
+		self.game_over = false;
+		self.ongoing = true;
 		painting = setInterval(function() {
 			self.painter.draw();
-		}, 10);
+		}, 20);
 	}
 
 	this.stop = function() {
@@ -189,8 +225,13 @@ var Game = function() {
 		catch{}
 		try{clearInterval(painting);}
 		catch{}
-		self.painter.drawImage(explosion, {x: self.cannon.x - 70, y: self.cannon.y - 80});
-		smash.play();
+		self.ongoing = false;
+		if (self.game_over) {
+			self.painter.drawImage(explosion, {x: self.cannon.x - 70, y: self.cannon.y - 80});
+			smash.play();
+			if (storage.get() < self.score)
+				storage.set(self.score);
+		}
 	}
 }
 
@@ -216,8 +257,10 @@ var Painter = function(game_inst) {
 
 	this.create_bullets = function() {
 		bullet_factory = setInterval(function() {
-			self.game.bullets.push(new Rectangle(self.game.cannon.x + 25, self.game.cannon.y, 8, 10, 'brown'));
-			self.game.bullets.push(new Rectangle(self.game.cannon.x + 40, self.game.cannon.y, 8, 10, 'brown'));
+			self.game.bullets.push(new Rectangle(self.game.cannon.x + 18, self.game.cannon.y, 8, 10, 'brown'));
+			self.game.bullets.push(new Rectangle(self.game.cannon.x + 28, self.game.cannon.y, 8, 10, 'brown'));
+			self.game.bullets.push(new Rectangle(self.game.cannon.x + 38, self.game.cannon.y, 8, 10, 'brown'));
+			self.game.bullets.push(new Rectangle(self.game.cannon.x + 48, self.game.cannon.y, 8, 10, 'brown'));
 		}, 50);
 	}
 
@@ -225,8 +268,7 @@ var Painter = function(game_inst) {
 		ball_factory = setInterval(function() {
 			if (self.game.balls.length < 4)
 				self.game.balls.push(new Circle(100, 200))
-		}, 10000);
-		self.game.balls.push(new Circle(100, 200));
+		}, 5000);
 	}
 
 	this.draw = function() {
@@ -239,7 +281,7 @@ var Painter = function(game_inst) {
 		for (var i=0; i<self.game.bullets.length; i++) {
 			var bullet = self.game.bullets[i];
 			self.drawImage(cannon_ball, bullet);
-			bullet.move('u');
+			bullet.move();
 		}
 		for (var i=0; i<self.game.balls.length; i++) {
 			var ball = self.game.balls[i];
@@ -262,9 +304,11 @@ smash.src = relative_path + 'smash.mp3';
 var load = setInterval(function() {
 	if (explosion.complete && cannon_ball.complete && cannon.complete && smash.readyState == 4) {
 		game = new Game();
+		storage = new Storage();
+		storage.set();
 		game.init();
 		game.draw();
 		game.start();
 		clearInterval(load);
 	}
-}, 100);
+}, 1000);
