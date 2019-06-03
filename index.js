@@ -130,7 +130,6 @@ var Circle = function(cx, cy, score, dirs) {
 var Storage = function() {
 	this.storage = window.localStorage;
 	var self = this;
-	var high_score = document.getElementById('high-score');
 	this.set = function(high) {
 		if (high == null) {
 			high = (self.get() === "undefined" || self.get() === "null") ? 0 : self.get();
@@ -148,7 +147,6 @@ var Storage = function() {
 
 var Game = function() {
 	var self = this;
-	var cur_score = document.getElementById('cur-score');
 	this.vw = window.innerWidth;
 	this.vh = window.innerHeight;
 
@@ -171,12 +169,8 @@ var Game = function() {
 
 	this.move = function(evt) {
 		if (evt.type == 'keydown') {
-			if (evt.keyCode == 32) {
-				if (self.ongoing)
-					self.stop();
-				else
-					self.start();
-			}
+			if (evt.keyCode == 32)
+				self.toggle_state();
 			if (evt.keyCode != 37 && evt.keyCode != 39)
 				return;
 			if (!self.kd) {
@@ -198,6 +192,10 @@ var Game = function() {
 	}
 
 	this.draw = function() {
+		info.style.boxShadow = '';
+		info.style.backgroundColor = '';
+		info.style.top = '10px';
+		info.innerHTML = "Press 'SPACEBAR' to pause / resume";
 		self.painter = new Painter(self);
 		self.painter.draw();
 		self.add_score(1);
@@ -206,6 +204,13 @@ var Game = function() {
 	this.add_score = function(ds) {
 		self.score += ds;
 		cur_score.innerHTML = self.score;
+	}
+
+	this.toggle_state = function() {
+		if (self.ongoing)
+			self.stop();
+		else
+			self.resume();
 	}
 
 	this.start = function() {
@@ -231,6 +236,23 @@ var Game = function() {
 			smash.play();
 			if (storage.get() < self.score)
 				storage.set(self.score);
+			setTimeout(function() {
+				info.style.boxShadow = '0 0 100px 100px #dedede';
+				info.style.backgroundColor = '#dedede';
+				info.style.top = '45vh';
+				info.innerHTML = 'Press \'SPACEBAR\' to restart';
+			}, 100);
+		}
+	}
+
+	this.resume = function() {
+		if (self.game_over) {
+			self.init();
+			self.draw();
+			self.start();
+		}
+		else if (!self.ongoing) {
+			self.start();
 		}
 	}
 }
@@ -291,6 +313,9 @@ var Painter = function(game_inst) {
 	}
 }
 
+var cur_score = document.getElementById('cur-score');
+var high_score = document.getElementById('high-score');
+var info = document.getElementsByTagName('p')[0];
 const relative_path = './resources/';
 const cannon_ball = new Image();
 const cannon = new Image();

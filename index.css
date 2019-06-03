@@ -46,3 +46,11 @@ canvas {
 	border-left: 3px solid #31bbfc;
 	padding-left: 10px;
 }
+
+#scores p {
+	text-transform: initial;
+	position: absolute;
+	left: 37vw;
+	transition: 100ms;
+	top: 10px;
+}
