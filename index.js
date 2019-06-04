@@ -4,7 +4,7 @@ var Rectangle = function(x, y, width, height, color) {
 	this.width = width;
 	this.height = height;
 	this.color = color;
-	var slide = 3;
+	var slide = 5;
 	var up = 20;
 	var self = this;
 
@@ -55,14 +55,14 @@ var Rectangle = function(x, y, width, height, color) {
 			game.add_score(ball.rad * 2);
 			game.balls.splice(game.balls.indexOf(ball), 1);
 			if (ball.rad < 35) return;
-			game.balls.push(new Circle(ball.cx - ball.rad, ball.cy, Math.floor(ball.rad), [-1, ball.dirs[1]]));
-			game.balls.push(new Circle(ball.cx + ball.rad, ball.cy, Math.floor(ball.rad), [1, ball.dirs[1]]));
+			game.balls.push(new Circle(ball.cx - ball.rad, ball.cy, Math.floor(ball.rad), [-1, ball.dirs[1]], 'left'));
+			game.balls.push(new Circle(ball.cx + ball.rad, ball.cy, Math.floor(ball.rad), [1, ball.dirs[1]], 'right'));
 		}
 	}
 }
 
 
-var Circle = function(cx, cy, score, dirs) {
+var Circle = function(cx, cy, score, dirs, name) {
 	var rand_color = function() {
 		var r = Math.floor(Math.random() * 255);
 		var g = Math.floor(Math.random() * 255);
@@ -77,14 +77,15 @@ var Circle = function(cx, cy, score, dirs) {
 
 	this.cx = cx;
 	this.cy = cy;
+	this.x = 5;
+	this.t = 1;
+	this.dt = 0;
 	this.colors = rand_color();
 	this.dirs = dirs || [1, 1];
-	this.cy_init = cy > 300 ? 300 : 200;
+	this.cy_init = cy > 300 ? 300 : cy;
 	this.score = score || 60 + Math.floor(Math.random() * 100);
 	this.rad = this.score * 0.5;
 	var self = this;
-	var hor = 5;
-	var vert = 3;
 
 	this.move = function() {
 		if (self.cx + self.rad > game.vw - 60) {
@@ -98,13 +99,18 @@ var Circle = function(cx, cy, score, dirs) {
 		if (self.cy + self.rad > game.vh - 50) {
 			self.dirs[1] = -1;
 			self.cy = game.vh - 50 - self.rad;
+			self.dt = self.t;
+			self.t = 1;
 		}
-		if (self.cy < self.cy_init) {
+		if (self.cy <= self.cy_init) {
 			self.cy = self.cy_init;
 			self.dirs[1] = 1;
+			self.dt = 0;
+			self.t = 1;
 		}
-		self.cx += (self.dirs[0] * hor);
-		self.cy += (self.dirs[1] * vert);
+		self.cx += (self.dirs[0] * self.x);
+		self.cy += (self.dirs[1] * 0.2 * (2 * (self.dirs[1] * (self.t - self.dt)) - 1));
+		self.t += 1;
 
 		var left = game.cannon.x;
 		var width = left + game.cannon.width;
@@ -160,7 +166,7 @@ var Game = function() {
 		self.ctx = self.canvas.getContext('2d');
 		self.cannon = new Rectangle((self.vw - 20) * 0.5, self.vh - 150, 75, 95, '#31bbfc');
 		self.bullets = [];
-		self.balls = [];
+		self.balls = [new Circle(100, 200)];
 		self.score = -1;
 		self.kd = false;
 		self.ongoing = false;
@@ -237,7 +243,7 @@ var Game = function() {
 			if (storage.get() < self.score)
 				storage.set(self.score);
 			setTimeout(function() {
-				info.style.boxShadow = '0 0 100px 100px #dedede';
+				info.style.boxShadow = '0 0 200px 200px #dedede';
 				info.style.backgroundColor = '#dedede';
 				info.style.top = '45vh';
 				info.innerHTML = 'Press \'SPACEBAR\' to restart';
